@@ -12,6 +12,7 @@ app.use((req, res, next) => {
   next(); // req-res passes through many middleware stages through next and finally res.send
 });
 
+//own middleware
 app.use((req, res, next) => {
   console.log('Middleware -- trying to get requested time');
   req.requestedTime = new Date().toISOString();
@@ -98,6 +99,40 @@ const deleteTour = (req, res) => {
   });
 };
 
+const getAllUsers = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'this route is not yet implemented',
+  });
+};
+
+const createUser = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'this route is not yet implemented',
+  });
+};
+
+const getUser = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'this route is not yet implemented',
+  });
+};
+const updateUser = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'this route is not yet implemented',
+  });
+};
+
+const deleteUser = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'this route is not yet implemented',
+  });
+};
+
 //get all tours
 // app.get('/api/v1/tours', getAlltours);
 
@@ -113,7 +148,11 @@ const deleteTour = (req, res) => {
 //delete
 //app.delete('/api/v1/tours/:id', deleteTour);
 
-app.route('/api/v1/tours').get(getAlltours).post(createTour);
+//create different routers for different resources - tours, users
+const tourRouter = express.Router();
+const userRouter = express.Router();
+
+tourRouter.route('/').get(getAlltours).post(createTour);
 
 //this middleware wont be called because req res cycle is already completed with the above route handler
 // app.use((req, res, next) => {
@@ -121,11 +160,15 @@ app.route('/api/v1/tours').get(getAlltours).post(createTour);
 //   next(); // req-res passes through many middleware stages through next and finally res.send
 // });
 
-app
-  .route('/api/v1/tours/:id')
-  .get(getTour)
-  .patch(updateTour)
-  .delete(deleteTour);
+tourRouter.route('/:id').get(getTour).patch(updateTour).delete(deleteTour);
+
+//users routes
+userRouter.route('/').get(getAllUsers).post(createUser);
+userRouter.route('/:id').get(getUser).patch(updateUser).delete(deleteUser);
+
+//middleware
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
 
 const port = 3000;
 app.listen(port, () => {
