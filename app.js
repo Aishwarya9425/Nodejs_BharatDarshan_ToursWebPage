@@ -64,18 +64,31 @@ app.post('/api/v1/tours', (req, res) => {
   );
 });
 
-app.patch('/api/v1/tours/:id', (req, res) => {
+//patch -- update only a part of the json
+// app.patch('/api/v1/tours/:id', (req, res) => {
+//   if (req.params.id > tours.length) {
+//     return res.status(404).json({ status: 'Failed', message: 'Invalid id' });
+//   }
+//   res.status(200).json({
+//     status: 'success',
+//     data: {
+//       tour: 'Updated tour.... ',
+//     },
+//   });
+// });
+
+//delete
+app.delete('/api/v1/tours/:id', (req, res) => {
+  //trying to delete an id which doesnt exist will give 404
   if (req.params.id > tours.length) {
     return res.status(404).json({ status: 'Failed', message: 'Invalid id' });
   }
-  res.status(200).json({
+  //204 - no content
+  res.status(204).json({
     status: 'success',
-    data: {
-      tour: 'Updated tour.... ',
-    },
+    data: null, //we dont send any data back
   });
 });
-
 const port = 3000;
 app.listen(port, () => {
   console.log(`App running on port ${port}....`);
