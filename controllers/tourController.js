@@ -17,7 +17,7 @@ const Tour = require('./../models/tourModel');
 
 //checkBody -  middleware
 //use req.param for param md, otherwise req.body -- post req,
-exports.checkBody = (req, res, next) => {
+/* exports.checkBody = (req, res, next) => {
   console.log(`---Middleware checkBody running--`);
   if (!req.body.price || !req.body.name) {
     return res.status(400).json({
@@ -26,7 +26,7 @@ exports.checkBody = (req, res, next) => {
     });
   }
   next(); //if everything is fine, move on to the next middleware ie createTour
-};
+}; */
 
 exports.getAlltours = (req, res) => {
   res.status(200).json({
@@ -52,28 +52,27 @@ exports.getTour = (req, res) => {
   // });
 };
 
-exports.createTour = (req, res) => {
-  //now to temp save in tours json create id, else mongo db will take care of id automatically
-  console.log(`Creating new tour with data...`);
-  // const newId = tours[tours.length - 1].id + 1;
-  // const newTour = Object.assign({ id: newId }, req.body);
-  // console.log('newTour', newTour);
-  // tours.push(newTour);
-  // //push into file
-  // //we are inside callback fun already and we cant block the event loop
-  // fs.writeFile(
-  //   `${__dirname}/dev-data/data/tours-simple.json`,
-  //   JSON.stringify(tours),
-  //   (err) => {
-  //     //201 req created
-  //     res.status(201).json({
-  //       status: 'success',
-  //       data: {
-  //         tour: newTour,
-  //       },
-  //     });
-  //   }
-  // );
+//post req.body
+exports.createTour = async (req, res) => {
+  try {
+    // const newTour = new Tour({})
+    // newTour.save()
+    //Creates a new document - returns a promise
+    const newTour = await Tour.create(req.body);
+    //201 req created
+    res.status(201).json({
+      status: 'success',
+      data: {
+        tour: newTour,
+      },
+    });
+  } catch (err) {
+    //if we create without a required field, the promise is rejected
+    res.status(400).json({
+      status: 'Failed',
+      message: err,
+    });
+  }
 };
 
 exports.updateTour = (req, res) => {

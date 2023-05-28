@@ -15,6 +15,7 @@ mongoose
   .connect(DB, {
     //connect to cluster
     useNewUrlParser: true,
+    useUnifiedTopology: true,
     useCreateIndex: true,
     useFindAndModify: false,
   })
