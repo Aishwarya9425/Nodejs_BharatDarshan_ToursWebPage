@@ -33,18 +33,17 @@ exports.getAlltours = async (req, res) => {
   try {
     //------------ build query -----------
 
-    //1. Filtering
+    //1A. Filtering
     //filter based on queries for example - { duration: '7', maxGroupSize: '15', price: '497' }
     //some filters like page has to be excluded
     //create shallow copy
-    console.log('original query..', req.query);
+    console.log('req.query', req.query);
     const queryObj = { ...req.query };
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((el) => delete queryObj[el]);
     console.log('queryObj after removing excludedFields is ', queryObj);
 
-    //2. Advanced filtering
-    //to use operators  lte, gte...
+    //1B. Advanced filtering to use operators lte, gte...
     //{ difficulty: 'easy', duration: { gte: '9' } }, only $ is missing
     //convert obj to str, replace with adding $
     let queryStr = JSON.stringify(queryObj);
@@ -53,7 +52,19 @@ exports.getAlltours = async (req, res) => {
     console.log(JSON.parse(queryStr));
 
     //if these operaters are not present, it wont affect the query
-    const query = Tour.find(JSON.parse(queryStr));
+    //Tour.find() returns a query, we can keep chaining many methods to this query
+    let query = Tour.find(JSON.parse(queryStr));
+
+    //2. SORTING ----- req.query { sort: 'price' }
+    //this is after finding the query, we use sort function
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      console.log(sortBy);
+      query = query.sort(sortBy);
+    } else {
+      // if user does not specify sort function
+      query = query.sort('-createdAt');
+    }
 
     //------ execute query ------
     const tours = await query;
