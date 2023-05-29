@@ -31,7 +31,33 @@ const Tour = require('./../models/tourModel'); //model created from schema
 //get all tours by find()
 exports.getAlltours = async (req, res) => {
   try {
-    const tours = await Tour.find();
+    //------------ build query -----------
+
+    //1. Filtering
+    //filter based on queries for example - { duration: '7', maxGroupSize: '15', price: '497' }
+    //some filters like page has to be excluded
+    //create shallow copy
+    console.log('original query..', req.query);
+    const queryObj = { ...req.query };
+    const excludedFields = ['page', 'sort', 'limit', 'fields'];
+    excludedFields.forEach((el) => delete queryObj[el]);
+    console.log('queryObj after removing excludedFields is ', queryObj);
+
+    //2. Advanced filtering
+    //to use operators  lte, gte...
+    //{ difficulty: 'easy', duration: { gte: '9' } }, only $ is missing
+    //convert obj to str, replace with adding $
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    //convert back to obj
+    console.log(JSON.parse(queryStr));
+
+    //if these operaters are not present, it wont affect the query
+    const query = Tour.find(JSON.parse(queryStr));
+
+    //------ execute query ------
+    const tours = await query;
+
     res.status(200).json({
       status: 'success',
       results: tours.length,
