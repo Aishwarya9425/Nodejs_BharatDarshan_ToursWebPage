@@ -55,7 +55,7 @@ exports.getAlltours = async (req, res) => {
     //Tour.find() returns a query, we can keep chaining many methods to this query
     let query = Tour.find(JSON.parse(queryStr));
 
-    //2. SORTING ----- req.query { sort: 'price' }
+    //2. SORTING ----- req.query { sort: 'price' } using sort()
     //this is after finding the query, we use sort function
     if (req.query.sort) {
       const sortBy = req.query.sort.split(',').join(' ');
@@ -64,6 +64,29 @@ exports.getAlltours = async (req, res) => {
     } else {
       // if user does not specify sort function
       query = query.sort('-createdAt');
+    }
+
+    //3. Field limiting ,get only specific fiels/col like name etc
+    //projecting using select()
+    if (req.query.fields) {
+      console.log('req.query.fields..', req.query.fields);
+      const fields = req.query.fields.split(',').join(' ');
+      query = query.select(fields);
+    } else {
+      // if user does not specify sort function
+      query = query.select('-__v'); //excluding __v
+    }
+
+    //4. Pagination using skip and limit
+    //page=2&limit=10
+    //default show pagination
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 100;
+    const skip = (page - 1) * limit;
+    query = query.skip(skip).limit(limit);
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+      if (skip >= numTours) throw new Error('This page does not exist');
     }
 
     //------ execute query ------

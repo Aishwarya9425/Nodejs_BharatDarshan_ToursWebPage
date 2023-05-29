@@ -50,8 +50,9 @@ const tourSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now(),
+    select: false, // to hide sensitive fields, exclude this from results?? can be used for passwords
   },
-  startDates : [Date] // arr of dates
+  startDates: [Date], // arr of dates
 });
 
 //model created from schema
