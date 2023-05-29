@@ -1,96 +1,25 @@
-const Tour = require('./../models/tourModel'); //model created from schema
+const Tour = require('./../models/tourModel');
+const APIFeatures = require('./../utils/apiFeatures');
 
-//get the updated tours json from the file -- will later use mongo db
-/* const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
-); */
-
-//check id - use middleware -- not needed because mongoose will generate unique id
-/* exports.checkID = (req, res, next, value) => {
-  console.log(`---Param Middleware checkID running--`);
-  console.log(`Tour id is: ${value}`);
-  if (req.params.id > tours.length) {
-    return res.status(404).json({ status: 'Failed', message: 'Invalid id' });
-  }
+//middlewares
+exports.aliasTopTours = (req, res, next) => {
+  req.query.limit = '5';
+  req.query.sort = '-ratingsAverage,price';
+  req.query.fields = 'name,price,summary,difficulty';
   next();
-}; */
-
-//checkBody -  middleware
-//use req.param for param md, otherwise req.body -- post req,
-/* exports.checkBody = (req, res, next) => {
-  console.log(`---Middleware checkBody running--`);
-  if (!req.body.price || !req.body.name) {
-    return res.status(400).json({
-      status: 'bad request',
-      message: 'Request does not contain name or/and price!',
-    });
-  }
-  next(); //if everything is fine, move on to the next middleware ie createTour
-}; */
+};
 
 //get all tours by find()
 exports.getAlltours = async (req, res) => {
   try {
-    //------------ build query -----------
-
-    //1A. Filtering
-    //filter based on queries for example - { duration: '7', maxGroupSize: '15', price: '497' }
-    //some filters like page has to be excluded
-    //create shallow copy
-    console.log('req.query', req.query);
-    const queryObj = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach((el) => delete queryObj[el]);
-    console.log('queryObj after removing excludedFields is ', queryObj);
-
-    //1B. Advanced filtering to use operators lte, gte...
-    //{ difficulty: 'easy', duration: { gte: '9' } }, only $ is missing
-    //convert obj to str, replace with adding $
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    //convert back to obj
-    console.log(JSON.parse(queryStr));
-
-    //if these operaters are not present, it wont affect the query
-    //Tour.find() returns a query, we can keep chaining many methods to this query
-    let query = Tour.find(JSON.parse(queryStr));
-
-    //2. SORTING ----- req.query { sort: 'price' } using sort()
-    //this is after finding the query, we use sort function
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
-      console.log(sortBy);
-      query = query.sort(sortBy);
-    } else {
-      // if user does not specify sort function
-      query = query.sort('-createdAt');
-    }
-
-    //3. Field limiting ,get only specific fiels/col like name etc
-    //projecting using select()
-    if (req.query.fields) {
-      console.log('req.query.fields..', req.query.fields);
-      const fields = req.query.fields.split(',').join(' ');
-      query = query.select(fields);
-    } else {
-      // if user does not specify sort function
-      query = query.select('-__v'); //excluding __v
-    }
-
-    //4. Pagination using skip and limit
-    //page=2&limit=10
-    //default show pagination
-    const page = req.query.page * 1 || 1;
-    const limit = req.query.limit * 1 || 100;
-    const skip = (page - 1) * limit;
-    query = query.skip(skip).limit(limit);
-    if (req.query.page) {
-      const numTours = await Tour.countDocuments();
-      if (skip >= numTours) throw new Error('This page does not exist');
-    }
-
     //------ execute query ------
-    const tours = await query;
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
+
+    const tours = await features.query;
 
     res.status(200).json({
       status: 'success',
@@ -100,6 +29,7 @@ exports.getAlltours = async (req, res) => {
       },
     });
   } catch (err) {
+    console.log(err);
     res.status(404).json({
       status: 'Failed getting all tours!!',
       message: err,
