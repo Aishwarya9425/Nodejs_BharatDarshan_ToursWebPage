@@ -7,9 +7,13 @@ const router = express.Router();
 //router.param('id', tourController.checkID);
 
 //alias, get top 5 cheapest tours??
-//run a middleware first 
-router.route('/top-5-cheap').get(tourController.aliasTopTours,tourController.getAlltours);
+//run a middleware first
+router
+  .route('/top-5-cheap')
+  .get(tourController.aliasTopTours, tourController.getAlltours);
 
+//router for aggregation query
+router.route('/tour-stats').get(tourController.getTourStats);
 router
   .route('/')
   .get(tourController.getAlltours)
