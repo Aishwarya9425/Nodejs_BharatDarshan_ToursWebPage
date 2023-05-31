@@ -144,14 +144,73 @@ exports.getTourStats = async (req, res) => {
       },
       //stage 4
       {
-        $match : { _id :{ $ne : 'easy'}} //exclude 
-      }
+        $match: { _id: { $ne: 'easy' } }, //exclude
+      },
     ]);
 
     res.status(200).json({
       status: 'success',
       data: {
         stats,
+      },
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err,
+    });
+  }
+};
+
+//get the busiest month, which month has the most tours???
+exports.getMonthlyPlan = async (req, res) => {
+  try {
+    const year = req.params.year * 1; //2021
+    const plan = await Tour.aggregate([
+      {
+        $unwind: '$startDates', //one document for each year, not just 2021
+      },
+      {
+        $match: {
+          //get only 2021 among these results
+          startDates: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`),
+          },
+        },
+      },
+      {
+        $group: {
+          //gets only the month from the startDates from match
+          _id: { $month: '$startDates' },
+          numTourStarts: { $sum: 1 },
+          tours: { $push: '$name' }, //get tour names, array because many tours in same month, so use push for arr;
+        },
+      },
+      {
+        $addFields: {
+          month: '$_id',
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+        },
+      },
+      {
+        $sort: {
+          numTourStarts: -1, //desc
+        },
+      },
+      {
+        $limit: 6, //top 6 
+      },
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        plan,
       },
     });
   } catch (err) {
