@@ -1,9 +1,10 @@
 //app.js has only express related code..
 const express = require('express');
 const morgan = require('morgan');
-
+const AppError = require('./utils/appError');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const globalErrorHandler = require('./controllers/errorController');
 
 const app = express();
 
@@ -37,9 +38,16 @@ app.use('/api/v1/users', userRouter);
 //middleware runs according to the order defined
 //middleware to handle all undefined routes
 app.all('*', (req, res, next) => {
-  res.status(404).json({
-    status: 'Fail',
-    message: `Can't find ${req.originalUrl} on this server!`,
-  });
+  // res.status(404).json({
+  //   status: 'Fail',
+  //   message: `Can't find ${req.originalUrl} on this server!`,
+  // });
+  // const err = new Error(`Can't find ${req.originalUrl} on this server!`);
+  // err.status = 'fail'; //not found routes
+  // err.statusCode = 404;
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
+
+app.use(globalErrorHandler);
+
 module.exports = app;
