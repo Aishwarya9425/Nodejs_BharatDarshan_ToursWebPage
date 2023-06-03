@@ -100,12 +100,15 @@ module.exports = (err, req, res, next) => {
 
     //cast to objectID failed for value _id or anything else
     //pass the mongoose err into these functions, this will return a new error using apperror class
-    if (error.name === 'CastError') error = handleCastErrorDB(error);
+
+    //issue with error.name -- not found!!
+    //use err only instead of error
+
+    if (err.name === 'CastError') error = handleCastErrorDB(error);
     //duplicate key error
-    if (error.code === 11000) error = handleDuplicateFieldsDB(error);
+    if (err.code === 11000) error = handleDuplicateFieldsDB(error);
     //validation erorrs from schema
-    if (error.name === 'ValidationError')
-      error = handleValidationErrorDB(error);
+    if (err.name === 'ValidationError') error = handleValidationErrorDB(error);
 
     //call sendErrorProd
     sendErrorProd(error, req, res);
