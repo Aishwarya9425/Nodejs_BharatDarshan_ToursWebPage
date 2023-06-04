@@ -16,28 +16,21 @@ const userSchema = new mongoose.Schema({
     //use npm package validator to validate email
     validate: [validator.isEmail, 'Please provide a valid email'],
   },
-  photo: {
-    type: String,
-  },
-  role: {
-    type: String,
-    enum: ['user', 'guide', 'lead-guide', 'admin'],
-    default: 'user',
-  },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
     minlength: 8,
+    select: false, //to not leak password, dont show it in any output - getAllUsers
   },
   passwordConfirm: {
     type: String,
     required: [true, 'Please confirm your password'],
     //check if password and passwordConfirm is the same
     validate: {
-      // This only works on CREATE and SAVE!!!
+      // This only workss on CREATE and SAVE!!!
       // arrow func cant have access to this
-      validator: function (passConfirm) {
-        return passConfirm === this.password;
+      validator: function (el) {
+        return el === this.password;
       },
       message: 'Passwords are not the same!',
     },
@@ -60,6 +53,16 @@ userSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
+
+//while logging in, check if given password is same as pass in db
+//need to decrypt the pass 
+//instance method - will be available in all documents of a certain collection
+userSchema.methods.correctPassword = async function(
+  candidatePassword,
+  userPassword
+) {
+  return await bcrypt.compare(candidatePassword, userPassword);
+};
 
 //user model based on user schema
 const User = mongoose.model('User', userSchema);
