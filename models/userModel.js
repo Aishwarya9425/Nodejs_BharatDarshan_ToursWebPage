@@ -35,6 +35,7 @@ const userSchema = new mongoose.Schema({
       message: 'Passwords are not the same!',
     },
   },
+  passwordChangedAt : Date
 });
 
 //encrpyt passwords in db, cant save it as it
@@ -63,6 +64,24 @@ userSchema.methods.correctPassword = async function(
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
+
+//check if user/hacker changed password after getting the token
+//if user changed pwd after logging in, then cant authorize to hit protected routes
+userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    //JWTTimestamp is in milliseconds so convert passwordChangedAt also
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+
+    return JWTTimestamp < changedTimestamp;
+  }
+
+  // False means NOT changed
+  return false;
+};
+
 
 //user model based on user schema
 const User = mongoose.model('User', userSchema);

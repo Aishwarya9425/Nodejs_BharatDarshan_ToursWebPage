@@ -84,6 +84,12 @@ const sendErrorProd = (err, req, res) => {
   });
 };
 
+const handleJWTError = () =>
+  new AppError('Invalid token. Please log in again!', 401);
+
+const handleJWTExpiredError = () =>
+  new AppError('Your token has expired! Please log in again!', 401);
+
 //error handling middleware
 module.exports = (err, req, res, next) => {
   console.log(err.stack);
@@ -105,6 +111,8 @@ module.exports = (err, req, res, next) => {
 
     //issue with error.name -- not found!!
     //use err only instead of error
+    //all these below errors - in production, the err msg will be different- to show the client
+    //in development actual error will be displayed
 
     if (err.name === 'CastError') error = handleCastErrorDB(error);
     //duplicate key error
@@ -112,6 +120,9 @@ module.exports = (err, req, res, next) => {
     //validation erorrs from schema
     if (err.name === 'ValidationError') error = handleValidationErrorDB(error);
 
+    //jwt errors
+    if (error.name === 'JsonWebTokenError') error = handleJWTError();
+    if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
     //call sendErrorProd
     sendErrorProd(error, req, res);
   }
