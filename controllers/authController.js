@@ -16,12 +16,12 @@ const signToken = (id) => {
 exports.signup = catchAsync(async (req, res, next) => {
   //to make sure users dont set their roles as admin
   //to make sure only these fields are saved in the db
-  //creating admin can be done only by manually editing mongo compass after user is created
   const newUser = await User.create({
     name: req.body.name,
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
+    role: req.body.role,
   });
 
   //once the user is created,we need to sign in the user using jwt
@@ -127,6 +127,25 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // GRANT ACCESS TO PROTECTED ROUTE
   req.user = currentUser;
+  console.log('req.user', req.user);
   res.locals.user = currentUser;
   next();
 });
+
+//before this, protect middleware runs which gets the current user details
+// restrict users, only admin and lead guide can delete tours
+// middleware, add this to the routes and pass the roles
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    // roles ['admin', 'lead-guide']. role='user'
+    //get the current user role
+    //why include because we can specify more than one role in this middleware
+    console.log('req.user.role', req.user.role);
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError('You do not have permission to perform this action', 403)
+      ); //403 forbidden
+    }
+    next();
+  };
+};

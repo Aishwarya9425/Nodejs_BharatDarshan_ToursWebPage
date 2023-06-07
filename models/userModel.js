@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema({
     //use npm package validator to validate email
     validate: [validator.isEmail, 'Please provide a valid email'],
   },
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    default: 'user',
+  },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
@@ -35,7 +40,7 @@ const userSchema = new mongoose.Schema({
       message: 'Passwords are not the same!',
     },
   },
-  passwordChangedAt : Date
+  passwordChangedAt: Date,
 });
 
 //encrpyt passwords in db, cant save it as it
@@ -56,9 +61,9 @@ userSchema.pre('save', async function (next) {
 });
 
 //while logging in, check if given password is same as pass in db
-//need to decrypt the pass 
+//need to decrypt the pass
 //instance method - will be available in all documents of a certain collection
-userSchema.methods.correctPassword = async function(
+userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword
 ) {
@@ -67,7 +72,7 @@ userSchema.methods.correctPassword = async function(
 
 //check if user/hacker changed password after getting the token
 //if user changed pwd after logging in, then cant authorize to hit protected routes
-userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
     //JWTTimestamp is in milliseconds so convert passwordChangedAt also
     const changedTimestamp = parseInt(
@@ -81,7 +86,6 @@ userSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
   // False means NOT changed
   return false;
 };
-
 
 //user model based on user schema
 const User = mongoose.model('User', userSchema);
