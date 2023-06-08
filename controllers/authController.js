@@ -2,6 +2,7 @@ const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
 const jwt = require('jsonwebtoken');
 const AppError = require('./../utils/appError');
+const sendEmail = require('./../utils/email');
 const { promisify } = require('util');
 //jwt - 1st signin the user and then verify whenever user hits any protected route
 
@@ -173,16 +174,27 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   //so disable other validation
   await user.save({ validateBeforeSave: false });
 
-  // 3) Send it to user's email using nodemailer
+  // 3) Send the reset token to user's email using nodemailer
+  //req.protocol - http or https
+  //req.get(host) - dev pr prod url
+  const resetURL = `${req.protocol}://${req.get(
+    'host'
+  )}/api/v1/users/resetPassword/${resetToken}`;
+  console.log('resetURL', resetURL);
+
+  const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}. \n If you did not request for a password reset, please ignore this email!`;
+
   try {
-    const resetURL = `${req.protocol}://${req.get(
-      'host'
-    )}/api/v1/users/resetPassword/${resetToken}`;
-    await new Email(user, resetURL).sendPasswordReset();
+    //sendEmail func imported
+    await sendEmail({
+      email: user.email,
+      subject: 'BharatDarshanTours -- You requested for a password reset',
+      message,
+    });
 
     res.status(200).json({
       status: 'success',
-      message: 'Token sent to email!',
+      message: 'Reset mail send to user with token',
     });
   } catch (err) {
     user.passwordResetToken = undefined;
