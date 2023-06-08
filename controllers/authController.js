@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const AppError = require('./../utils/appError');
 const sendEmail = require('./../utils/email');
 const { promisify } = require('util');
+const crypto = require('crypto');
 //jwt - 1st signin the user and then verify whenever user hits any protected route
 
 //create token for signing up, again for logging in
@@ -210,20 +211,27 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on the token
+  //get the token from the req.params
+  console.log('inside resetPassword');
+  console.log('req.params.token', req.params.token);
   const hashedToken = crypto
     .createHash('sha256')
     .update(req.params.token)
     .digest('hex');
 
+  // see if this encrypted token exists in db
+  //get the token only if expiration datetime is greater than now
   const user = await User.findOne({
     passwordResetToken: hashedToken,
     passwordResetExpires: { $gt: Date.now() },
   });
+  //passwordResetExpires -- 2023-06-08T13:47:11.253+00:00
 
   // 2) If token has not expired, and there is user, set the new password
   if (!user) {
     return next(new AppError('Token is invalid or has expired', 400));
   }
+  //the user will set new password and passwordConfirm via patch reset req
   user.password = req.body.password;
   user.passwordConfirm = req.body.passwordConfirm;
   user.passwordResetToken = undefined;
@@ -232,5 +240,10 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   // 3) Update changedPasswordAt property for the user
   // 4) Log the user in, send JWT
-  createSendToken(user, 200, req, res);
+  //new token created for logging in
+  const token = signToken(user._id);
+  res.status(200).json({
+    status: 'success',
+    token,
+  });
 });

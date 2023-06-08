@@ -46,6 +46,14 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: Date,
 });
 
+userSchema.pre('save', function (next) {
+  //if document is new - this.isNew or password is not modified
+  if (!this.isModified('password') || this.isNew) return next();
+  this.passwordChangedAt = Date.now() - 1000;
+  console.log('this.passwordChangedAt', this.passwordChangedAt);
+  next();
+});
+
 //encrpyt passwords in db, cant save it as it
 //using middleware, after getting data and before saving
 userSchema.pre('save', async function (next) {
