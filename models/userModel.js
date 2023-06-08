@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 //user schema
 const userSchema = new mongoose.Schema({
@@ -41,6 +42,8 @@ const userSchema = new mongoose.Schema({
     },
   },
   passwordChangedAt: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
 });
 
 //encrpyt passwords in db, cant save it as it
@@ -63,6 +66,7 @@ userSchema.pre('save', async function (next) {
 //while logging in, check if given password is same as pass in db
 //need to decrypt the pass
 //instance method - will be available in all documents of a certain collection
+//here the collection is user
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword
@@ -87,6 +91,25 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   return false;
 };
 
+//password reset - random stringreq.accepts;
+//reset password till user creates new pass
+userSchema.methods.createPasswordResetToken = function () {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  console.log('resetToken', resetToken);
+  console.log('encrpyting this ');
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  //ssave the encrypted reset token to db
+  console.log('this.passwordResetToken', this.passwordResetToken);
+
+  //user has to reset password in 10 mins
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  return resetToken; //send plain random string to user email
+};
 //user model based on user schema
 const User = mongoose.model('User', userSchema);
 
