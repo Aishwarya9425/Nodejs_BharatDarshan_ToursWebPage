@@ -7,6 +7,14 @@ const userRouter = require('./routes/userRoutes');
 const globalErrorHandler = require('./controllers/errorController');
 const rateLimit = require('express-rate-limit');
 const app = express();
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+
+//Helmet helps secure Express apps by setting HTTP response headers.
+//adds extra security headers
+//now we have 21 headers
+app.use(helmet());
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -20,10 +28,30 @@ const limiter = rateLimit({
     'Too many requests from this IP address, please try again sometime later!!',
 });
 
+// Apply the rate limiting middleware to all requests starting from /api
 app.use('/api', limiter);
 
 //middleware -- stands b/w req and response
-app.use(express.json());
+//body parser, reading data from body into req.body
+app.use(
+  express.json({
+    limit: '10kb',
+  })
+);
+
+//after body parsing, data sanitisation
+//clean all data from malicious code
+//data sanitization against noSQL query injection
+//data sanitization against XSS
+// {
+//   "email":{"$gt" : ""}, --> instead of giving actual value, attacker just writes a query which is evaluated to true
+//   "password" :"simple123"
+// }
+
+//This module searches for any keys in objects that begin with a $ sign or contain a ., from req.body, req.query or req.params and removes them
+app.use(mongoSanitize());
+
+app.use(xss()); //clean malicious html code
 
 //serve static file
 app.use(express.static(`${__dirname}/public`));
