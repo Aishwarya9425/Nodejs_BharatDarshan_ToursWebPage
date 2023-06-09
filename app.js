@@ -10,6 +10,7 @@ const app = express();
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
+const hpp = require('hpp');
 
 //Helmet helps secure Express apps by setting HTTP response headers.
 //adds extra security headers
@@ -52,6 +53,15 @@ app.use(
 app.use(mongoSanitize());
 
 app.use(xss()); //clean malicious html code
+
+//prevent http parameter pollution
+//it just selects the last parameter value
+//if u want to duplicate the query param then add to whitelist
+app.use(
+  hpp({
+    whitelist: ['duration', 'difficulty'],
+  })
+);
 
 //serve static file
 app.use(express.static(`${__dirname}/public`));
