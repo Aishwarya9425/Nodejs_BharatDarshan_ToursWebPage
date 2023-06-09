@@ -5,12 +5,22 @@ const AppError = require('./utils/appError');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const globalErrorHandler = require('./controllers/errorController');
-
+const rateLimit = require('express-rate-limit');
 const app = express();
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+//max 100 requests from the same ip address in 1 hour windo
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 60 * 60 * 1000,
+  message:
+    'Too many requests from this IP address, please try again sometime later!!',
+});
+
+app.use('/api', limiter);
 
 //middleware -- stands b/w req and response
 app.use(express.json());
