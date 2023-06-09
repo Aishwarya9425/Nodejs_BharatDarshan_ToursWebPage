@@ -44,6 +44,12 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  active: {
+    //user is active or inactive(if deleted)
+    type: Boolean,
+    default: true,
+    select: false, //dont show in output
+  },
 });
 
 userSchema.pre('save', function (next) {
@@ -51,6 +57,14 @@ userSchema.pre('save', function (next) {
   if (!this.isModified('password') || this.isNew) return next();
   this.passwordChangedAt = Date.now() - 1000;
   console.log('this.passwordChangedAt', this.passwordChangedAt);
+  next();
+});
+
+//dont show inactive users in all queries which start with find
+userSchema.pre(/^find/, function (next) {
+  // this points to the current query
+  //other doc dont have active set to true explicitly
+  this.find({ active: { $ne: false } }); //show only doc not equal to false
   next();
 });
 

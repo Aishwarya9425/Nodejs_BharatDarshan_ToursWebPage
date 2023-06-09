@@ -11,6 +11,16 @@ router.post('/login', authController.login);
 router.post('/forgotPassword', authController.forgotPassword);
 //resetPassword will receive token and new password
 router.patch('/resetPassword/:token', authController.resetPassword);
+//update password, user will send the current password 1st to verify
+router.patch(
+  '/updateMyPassword',
+  authController.protect,
+  authController.updatePassword
+);
+//update user details only name and email
+router.patch('/updateMe', authController.protect, userController.updateMe);
+//delet user profile - set active to false, wont actually delete doc from db
+router.delete('/deleteMe', authController.protect, userController.deleteMe);
 
 //users routes
 router
