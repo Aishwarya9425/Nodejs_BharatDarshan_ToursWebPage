@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const validator = require('validator');
+const User = require('./userModel');
 
 //schema with validations, required etc
 const tourSchema = new mongoose.Schema(
@@ -68,6 +69,32 @@ const tourSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    //geospatial data
+    startLocation: {
+      // GeoJSON
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number], //array of number - lat and long
+      address: String,
+      description: String,
+    },
+    //different locations visited in the tour package
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point'],
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number,
+      },
+    ],
     imageCover: {
       type: String,
       required: [true, 'A tour must have a image Cover'],
@@ -83,6 +110,13 @@ const tourSchema = new mongoose.Schema(
     //   type: Boolean,
     //   default: false,
     // },
+    //referencing
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   //include the virtual props in output, postman
   {
@@ -136,6 +170,28 @@ tourSchema.pre(/^find/, function (next) {
 
   next();
 });
+
+//all queries will populate guides
+tourSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'guides',
+    select: '-__v -passwordChangedAt'
+  });
+
+  next();
+});
+
+//before creating a new tour
+//works only for creating not update
+// tourSchema.pre('save', async function (next) {
+//   //loop tru the guides map given in the req post body while creating a new tour
+//   //get the user by the id
+//   //guidesPromises is an array of promises
+//   console.log('Getting the user id of each guide while creating a new tour');
+//   const guidesPromises = this.guides.map(async (id) => await User.findById(id));
+//   this.guides = await Promise.all(guidesPromises);
+//   next();
+// });
 
 // tourSchema.post(/^find/, function(docs, next) {
 //   console.log(`Query took ${Date.now() - this.start} milliseconds!`);

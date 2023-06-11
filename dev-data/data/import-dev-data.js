@@ -23,7 +23,7 @@ mongoose
 
 //read tourjson file, convert json into obj
 const tourObj = JSON.parse(
-  fs.readFileSync(`${__dirname}/tours-simple.json`, 'utf-8')
+  fs.readFileSync(`${__dirname}/tours.json`, 'utf-8')
 );
 
 //import data into db
