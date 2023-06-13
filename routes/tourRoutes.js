@@ -1,8 +1,14 @@
 const express = require('express');
 const tourController = require('./../controllers/tourController');
 const authController = require('./../controllers/authController');
+const reviewRouter = require('./../routes/reviewRoutes');
+const reviewController = require('./../controllers/reviewController');
 
 const router = express.Router();
+
+// POST /tour/234fad4/reviews
+// GET /tour/234fad4/reviews
+router.use('/:tourId/reviews', reviewRouter);
 
 //param middleware
 //router.param('id', tourController.checkID);
