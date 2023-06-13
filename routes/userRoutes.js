@@ -18,6 +18,8 @@ router.patch(
   authController.updatePassword
 );
 
+router.get('/me', userController.getMe, userController.getUser);
+
 //update user details only name and email
 router.patch('/updateMe', authController.protect, userController.updateMe);
 //delet user profile - set active to false, wont actually delete doc from db
