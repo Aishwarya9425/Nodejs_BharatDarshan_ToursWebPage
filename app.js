@@ -1,101 +1,113 @@
-//app.js has only express related code..
+const path = require('path');
 const express = require('express');
 const morgan = require('morgan');
-const AppError = require('./utils/appError');
-const tourRouter = require('./routes/tourRoutes');
-const userRouter = require('./routes/userRoutes');
-const reviewRouter = require('./routes/reviewRoutes');
-const globalErrorHandler = require('./controllers/errorController');
 const rateLimit = require('express-rate-limit');
-const app = express();
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const compression = require('compression');
+const cors = require('cors');
 
-//Helmet helps secure Express apps by setting HTTP response headers.
-//adds extra security headers
-//now we have 21 headers
+const AppError = require('./utils/appError');
+const globalErrorHandler = require('./controllers/errorController');
+const tourRouter = require('./routes/tourRoutes');
+const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
+const bookingController = require('./controllers/bookingController');
+const viewRouter = require('./routes/viewRoutes');
+
+// Start express app
+const app = express();
+
+app.enable('trust proxy');
+
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, 'views'));
+
+// 1) GLOBAL MIDDLEWARES
+// Implement CORS
+app.use(cors());
+// Access-Control-Allow-Origin *
+// api.natours.com, front-end natours.com
+// app.use(cors({
+//   origin: 'https://www.natours.com'
+// }))
+
+app.options('*', cors());
+// app.options('/api/v1/tours/:id', cors());
+
+// Serving static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Set security HTTP headers
 app.use(helmet());
 
+// Development logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-//max 100 requests from the same ip address in 1 hour windo
+// Limit requests from same API
 const limiter = rateLimit({
   max: 100,
   windowMs: 60 * 60 * 1000,
-  message:
-    'Too many requests from this IP address, please try again sometime later!!',
+  message: 'Too many requests from this IP, please try again in an hour!'
 });
-
-// Apply the rate limiting middleware to all requests starting from /api
 app.use('/api', limiter);
 
-//middleware -- stands b/w req and response
-//body parser, reading data from body into req.body
-app.use(
-  express.json({
-    limit: '10kb',
-  })
+// Stripe webhook, BEFORE body-parser, because stripe needs the body as stream
+app.post(
+  '/webhook-checkout',
+  bodyParser.raw({ type: 'application/json' }),
+  bookingController.webhookCheckout
 );
 
-//after body parsing, data sanitisation
-//clean all data from malicious code
-//data sanitization against noSQL query injection
-//data sanitization against XSS
-// {
-//   "email":{"$gt" : ""}, --> instead of giving actual value, attacker just writes a query which is evaluated to true
-//   "password" :"simple123"
-// }
+// Body parser, reading data from body into req.body
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(cookieParser());
 
-//This module searches for any keys in objects that begin with a $ sign or contain a ., from req.body, req.query or req.params and removes them
+// Data sanitization against NoSQL query injection
 app.use(mongoSanitize());
 
-app.use(xss()); //clean malicious html code
+// Data sanitization against XSS
+app.use(xss());
 
-//prevent http parameter pollution
-//it just selects the last parameter value
-//if u want to duplicate the query param then add to whitelist
+// Prevent parameter pollution
 app.use(
   hpp({
-    whitelist: ['duration', 'difficulty'],
+    whitelist: [
+      'duration',
+      'ratingsQuantity',
+      'ratingsAverage',
+      'maxGroupSize',
+      'difficulty',
+      'price'
+    ]
   })
 );
 
-//serve static file
-app.use(express.static(`${__dirname}/public`));
+app.use(compression());
 
-// ----- middleware example  -----
-/* //order matters in express - define before all route handlers..
+// Test middleware
 app.use((req, res, next) => {
-  console.log('Hello from the middleware');
-  next(); // req-res passes through many middleware stages through next and finally res.send
+  req.requestTime = new Date().toISOString();
+  // console.log(req.cookies);
+  next();
 });
 
-//own middleware
-app.use((req, res, next) => {
-  console.log('Middleware -- trying to get requested time');
-  req.requestedTime = new Date().toISOString();
-  next(); // req-res passes through many middleware stages through next and finally res.send
-}); */
-
-//middleware
+// 3) ROUTES
+app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
-//middleware runs according to the order defined
-//middleware to handle all undefined routes
 app.all('*', (req, res, next) => {
-  // res.status(404).json({
-  //   status: 'Fail',
-  //   message: `Can't find ${req.originalUrl} on this server!`,
-  // });
-  // const err = new Error(`Can't find ${req.originalUrl} on this server!`);
-  // err.status = 'fail'; //not found routes
-  // err.statusCode = 404;
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
