@@ -1,9 +1,11 @@
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
 const fs = require('fs');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 const Tour = require('./../../models/tourModel');
+const Review = require('./../../models/reviewModel');
+const User = require('./../../models/userModel');
 
-dotenv.config({ path: './config.env' }); //1st read the env file
+dotenv.config({ path: './config.env' });
 
 const DB = process.env.DATABASE.replace(
   '<PASSWORD>',
@@ -13,46 +15,46 @@ const DB = process.env.DATABASE.replace(
 mongoose
   .connect(DB, {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
     useCreateIndex: true,
-    useFindAndModify: false,
+    useFindAndModify: false
   })
-  .then(() => {
-    console.log('Connected to mongo db successfully!!');
-  });
+  .then(() => console.log('DB connection successful!'));
 
-//read tourjson file, convert json into obj
-const tourObj = JSON.parse(
-  fs.readFileSync(`${__dirname}/tours.json`, 'utf-8')
+// READ JSON FILE
+const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours.json`, 'utf-8'));
+const users = JSON.parse(fs.readFileSync(`${__dirname}/users.json`, 'utf-8'));
+const reviews = JSON.parse(
+  fs.readFileSync(`${__dirname}/reviews.json`, 'utf-8')
 );
 
-//import data into db
+// IMPORT DATA INTO DB
 const importData = async () => {
   try {
-    await Tour.create(tourObj);
-    console.log('Tour data created successfully');
+    await Tour.create(tours);
+    await User.create(users, { validateBeforeSave: false });
+    await Review.create(reviews);
+    console.log('Data successfully loaded!');
   } catch (err) {
     console.log(err);
   }
   process.exit();
 };
 
-//delete all data from db
+// DELETE ALL DATA FROM DB
 const deleteData = async () => {
   try {
-    await Tour.deleteMany(); //delet all documents
-    console.log('Deleted all documents!!');
+    await Tour.deleteMany();
+    await User.deleteMany();
+    await Review.deleteMany();
+    console.log('Data successfully deleted!');
   } catch (err) {
     console.log(err);
   }
   process.exit();
 };
 
-//via cli command, depending on what you specify
 if (process.argv[2] === '--import') {
   importData();
 } else if (process.argv[2] === '--delete') {
   deleteData();
 }
-
-console.log(process.argv);
