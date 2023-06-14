@@ -32,9 +32,9 @@ app.set('views', path.join(__dirname, 'views'));
 // Implement CORS
 app.use(cors());
 // Access-Control-Allow-Origin *
-// api.natours.com, front-end natours.com
+// api.BharatDarshanTours.com, front-end BharatDarshanTours.com
 // app.use(cors({
-//   origin: 'https://www.natours.com'
+//   origin: 'https://www.BharatDarshanTours.com'
 // }))
 
 app.options('*', cors());
@@ -55,7 +55,7 @@ if (process.env.NODE_ENV === 'development') {
 const limiter = rateLimit({
   max: 100,
   windowMs: 60 * 60 * 1000,
-  message: 'Too many requests from this IP, please try again in an hour!'
+  message: 'Too many requests from this IP, please try again in an hour!',
 });
 app.use('/api', limiter);
 
@@ -86,8 +86,8 @@ app.use(
       'ratingsAverage',
       'maxGroupSize',
       'difficulty',
-      'price'
-    ]
+      'price',
+    ],
   })
 );
 
